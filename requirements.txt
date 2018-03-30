@@ -1,0 +1,5 @@
+apiai==1.2.3
+requests==2.18.1
+urllib3==1.21.1
+python-telegram-bot==10.0.1
+python-dotenv
