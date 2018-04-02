@@ -10,3 +10,7 @@ def get_tg_token():
 
 def get_apiai_token():
     return os.getenv("APIAI_TOKEN")
+
+
+def get_iata_token():
+    return os.getenv("IATA_TOKEN")

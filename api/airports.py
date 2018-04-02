@@ -20,6 +20,3 @@ def get_iata(name):
             return list(map(lambda x: x['code'], res)) if len(res) > 0 else None
         else:
             return None
-
-
-print(get_iata("Penza"), get_iata("Moscow"), get_iata("Уфа"))
