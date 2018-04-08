@@ -95,7 +95,7 @@ def get_hotel(d, d0, d1, c0, ht):
             htls = driver.find_elements_by_tag_name("article")
             if len(htls) > 0:
                 res = htls
-                res = list(filter(lambda x: x['finished'], map(processhotel, res[:min(len(res) - 1, 40)])))
+                res = list(filter(lambda x: x['finished'], map(processhotel, res[:min(len(res) - 1, 50)])))
                 # res = sorted(filter(lambda x: x['finished'], map(processhotel, res)), key=lambda x: x['dist'])
                 res.append(driver.current_url)
     except Exception as e:

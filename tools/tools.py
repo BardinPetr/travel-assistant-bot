@@ -39,18 +39,18 @@ def gen_hotels_selector(htls, fburl):
 
 
 def _gen_btns(y, n_cols=1):
-    button_list = list(map(lambda x: InlineKeyboardButton(x[0], url=x[1]), y))
+    button_list = list(map(lambda x: InlineKeyboardButton(x[0], callback_data=x[1]), y))
     return InlineKeyboardMarkup(build_menu(button_list, n_cols=n_cols))
 
 
 def gen_btns(id, ud):
     if id == 1:
-        l = list(ud['recent_src']) + ['Москва', 'Пенза']
-        cnt = min(len(l) - 1, 3)
+        l = list(ud['recent_src']) + ['Москва', 'Пенза', 'Саранск']
+        cnt = min(len(l), 3)
         return _gen_btns(map(lambda x: [x, x], l[:cnt]), cnt)
     elif id == 2:
-        l = list(ud['recent_dst']) + ['Москва', 'Пенза']
-        cnt = min(len(l) - 1, 3)
+        l = list(ud['recent_dst']) + ['Москва', 'Пенза', 'Саранск']
+        cnt = min(len(l), 3)
         return _gen_btns(map(lambda x: [x, x], l[:cnt]), cnt)
     elif id == 3:
         return _gen_btns([datetime.datetime.now().strftime("%d %B"),
