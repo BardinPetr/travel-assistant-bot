@@ -21,11 +21,10 @@ kbs = list(map(lambda x: ReplyKeyboardMarkup(x, one_time_keyboard=True), kbs))
 
 
 def start(bot, update, user_data):
-    if 'status' not in user_data.keys():
-        user_data['status'] = USER_INACTIVE
-        user_data['recent_src'] = set()
-        user_data['recent_dst'] = set()
-        msg_handle(bot, update, user_data)
+    user_data['status'] = USER_INACTIVE
+    user_data['recent_src'] = set()
+    user_data['recent_dst'] = set()
+    msg_handle(bot, update, user_data)
 
 
 @run_async
@@ -90,15 +89,14 @@ def msg_handle(bot, update, user_data, _d=None, _c=None):
                             htls = htls[:-1]
                             names = ['Первый', 'Второй', 'Третий']
                             i = 0
-                            print(htls)
                             for htl in htls[:3]:
                                 bot.send_photo(cid, photo=htl['img'], caption="{} вариант:\n".format(names[i]))
-                                bot.send_message(cid, "{} {}\nСтоимость: {}РУБ/сут\nРейтинг: {}".format(
+                                bot.send_message(cid, "{} {}\nСтоимость: {}РУБ/сут\nРейтинг: {} {}".format(
                                     tools.tools.decode_hotel_type(hotel_type),
                                     htl['name'],
-                                    htl['stars'],
                                     htl['cost'],
-                                    htl['rank']))
+                                    htl['rank'],
+                                    emojize('🌟' * htl['stars'])))
                                 i += 1
                             bot.send_message(cid,
                                              "Какой отель наравится больше?\n"

@@ -45,11 +45,11 @@ def _gen_btns(y, n_cols=1):
 
 def gen_btns(id, ud):
     if id == 1:
-        l = list(ud['recent_src']) + ['Москва', 'Пенза', 'Саранск']
+        l = list(set(list(ud['recent_src']) + ['Москва', 'Пенза', 'Саранск']))
         cnt = min(len(l), 3)
         return _gen_btns(map(lambda x: [x, x], l[:cnt]), cnt)
     elif id == 2:
-        l = list(ud['recent_dst']) + ['Москва', 'Пенза', 'Саранск']
+        l = list(set(list(ud['recent_dst']) + ['Москва', 'Пенза', 'Саранск']))
         cnt = min(len(l), 3)
         return _gen_btns(map(lambda x: [x, x], l[:cnt]), cnt)
     elif id == 3:
