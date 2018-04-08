@@ -1,4 +1,4 @@
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, InlineKeyboardButton, InlineKeyboardMarkup
 from api import dialogflow, airports, avia, hotels
 from telegram.ext.dispatcher import run_async
@@ -29,10 +29,12 @@ def start(bot, update, user_data):
 
 
 @run_async
-def msg_handle(bot, update, user_data):
-    text, params, cid = demojize(update.message.text), {}, update.message.chat.id
-
-    res = apiai.run(update.message.text, update.message.chat.id)
+def msg_handle(bot, update, user_data, _d=None, _c=None):
+    if _d and _c:
+        text, params, cid = _d, {}, _c
+    else:
+        text, params, cid = demojize(update.message.text), {}, update.message.chat.id
+    res = apiai.run(text, cid)
     fulfillment = dialogflow.get_fulfillment(res)
     if fulfillment.count(';-)') > 0:
         fulfillment, params = fulfillment.split(';-)')
@@ -56,9 +58,9 @@ def msg_handle(bot, update, user_data):
             if action == ACT_S_ALL or (action == ACT_RETRY and 'recent_req' in user_data.keys()):
                 if action == ACT_RETRY:
                     params = user_data['recent_req']
-                    update.message.reply_text("Хорошо, попробуем еще раз")
+                    bot.send_message(cid, "Хорошо, попробуем еще раз")
                 else:
-                    update.message.reply_text(fulfillment)
+                    bot.send_message(cid, fulfillment)
                 src = airports.get_iata(params['from-city'])[0]
                 dst = airports.get_iata(params['geo-city'])[0]
                 start_date = tools.tools.parse_time(params['from'])
@@ -73,76 +75,60 @@ def msg_handle(bot, update, user_data):
 
                 ticket = avia.get_ticket(src, dst, start_date, end_date, num_persons, 0)
                 if ticket:
-                    update.message.reply_text("Итак, вот рейс, который вам подойдет")
+                    bot.send_message(cid, "Итак, вот рейс, который вам подойдет")
                     bot.send_photo(cid, photo=ticket['img'],
                                    caption="Итого: %dРУБ" % ticket['price'])
-                    update.message.reply_text(
-                        "Чтобы забронировать, нажмите кнопку\nА пока мы подготовим отели.",
-                        reply_markup=tools.tools.gen_goto_booking_site(ticket['link']))
+                    bot.send_message(cid,
+                                     "Чтобы забронировать, нажмите кнопку\nА пока мы подготовим отели.",
+                                     reply_markup=tools.tools.gen_goto_booking_site(ticket['link']))
 
                     htls = hotels.get_hotel(near_to, start_date, end_date, num_persons, hotel_type)
                     if htls:
                         if len(htls) > 4:
-                            update.message.reply_text("А вот и идеи для вашего проживания:")
+                            bot.send_message(cid, "А вот и идеи для вашего проживания:")
                             fallbackurl = htls[-1]
                             htls = htls[:-1]
                             names = ['Первый', 'Второй', 'Третий']
                             i = 0
                             print(htls)
                             for htl in htls[:3]:
+                                bot.send_photo(cid, photo=htl['img'], caption="{} вариант:\n".format(names[i]))
+                                bot.send_message(cid, "{} {}\nСтоимость: {}РУБ/сут\nРейтинг: {}".format(
+                                    tools.tools.decode_hotel_type(hotel_type),
+                                    htl['name'],
+                                    htl['stars'],
+                                    htl['cost'],
+                                    htl['rank']))
                                 i += 1
-                                if 'dist' in htl.keys():
-                                    bot.send_photo(cid, photo=htl['img'],
-                                                   caption="""
-                                                   {} вариант:\n
-                                                   {}: {}  {}\n
-                                                   Стоимость: {}РУБ (на всё время, на всех)\n
-                                                   Рейтинг: {}\n
-                                                   Расстояние до вашего места: {}км
-                                                   """.format(names[i],
-                                                              tools.tools.decode_hotel_type(hotel_type),
-                                                              htl['name'],
-                                                              htl['stars'],
-                                                              htl['cost'],
-                                                              htl['rank'],
-                                                              htl['dist']))
-                                else:
-                                    bot.send_photo(cid, photo=htl['img'],
-                                                   caption="""
-                                                   {} вариант:\n
-                                                   """)
-                                    update.message.reply_text("""
-                                                   {}: {}  {}\n
-                                                   Стоимость: {}РУБ (на всё время, на всех)\n
-                                                   Рейтинг: {}
-                                                   """.format(names[i],
-                                                              tools.tools.decode_hotel_type(hotel_type),
-                                                              htl['name'],
-                                                              htl['stars'],
-                                                              htl['cost'],
-                                                              htl['rank']))
-                            update.message.reply_text(
-                                "Какой отель наравится больше?\n"
-                                "Нажми на кнопку, чтобы забронировать!\n\n"
-                                "Удачного путешествия!",
-                                reply_markup=tools.tools.gen_hotels_selector(htls, fallbackurl))
+                            bot.send_message(cid,
+                                             "Какой отель наравится больше?\n"
+                                             "Нажми на кнопку, чтобы забронировать!\n\n"
+                                             "Удачного путешествия!",
+                                             reply_markup=tools.tools.gen_hotels_selector(htls, fallbackurl))
                         else:
-                            update.message.reply_text("Прости, но не удалось найти подходящих отелей :-(\n"
-                                                      "То ты можешь повторить тоже самое просто сказав мне")
+                            bot.send_message(cid, "Прости, но не удалось найти подходящих отелей\n"
+                                                  "Я могу попытаться снова, просто скажи")
                     else:
-                        update.message.reply_text("Прости, но у нас неполадки на сервере, найти отель не удалось :-(\n"
-                                                  "То ты можешь повторить тоже самое просто сказав мне")
+                        bot.send_message(cid, "Прости, но у нас неполадки на сервере, найти отель не удалось\n"
+                                              "Я могу попытаться снова, просто скажи")
                 else:
-                    update.message.reply_text("Прости, но у нас неполадки на сервере, найти билеты не удалось :-(\n"
-                                              "То ты можешь повторить тоже самое просто сказав мне")
+                    bot.send_message(cid, "Прости, но у нас неполадки на сервере, найти билеты не удалось\n"
+                                          "Я могу попытаться снова, просто скажи")
                 return
 
     if 'k' in params.keys():
-        update.message.reply_text(fulfillment, reply_markup=kbs[int(params['k'])])
+        bot.send_message(cid, fulfillment, reply_markup=kbs[int(params['k'])])
     elif 'b' in params.keys():
-        update.message.reply_text(fulfillment, reply_markup=tools.tools.gen_btns(int(params['b']), user_data))
+        bot.send_message(cid, fulfillment, reply_markup=tools.tools.gen_btns(int(params['b']), user_data))
     else:
-        update.message.reply_text(fulfillment)
+        bot.send_message(cid, fulfillment)
+
+
+@run_async
+def cb_handle(bot, update, user_data):
+    msg_handle(bot, update, user_data,
+               update['callback_query']['data'],
+               update['callback_query']['message']['chat']['id'])
 
 
 def main():
@@ -151,6 +137,7 @@ def main():
 
     dp.add_handler(CommandHandler('start', start, pass_user_data=True))
     dp.add_handler(MessageHandler(Filters.text, msg_handle, pass_user_data=True))
+    dp.add_handler(CallbackQueryHandler(cb_handle, pass_user_data=True))
 
     updater.start_polling()
     updater.idle()
