@@ -8,7 +8,7 @@ from PIL import Image
 from os import remove
 import contextlib
 import subprocess
-from tools.tools import parse_time
+from tools.tools import parse_time, fullpage_screenshot
 import os
 
 
@@ -20,7 +20,7 @@ def get_ticket(f, t, d0, d1, c0, c1):
     res = None
 
     try:
-        with contextlib.closing(webdriver.Chrome("/home/petr/Downloads/chromedriver")) as driver:
+        with contextlib.closing(webdriver.Chrome()) as driver:
             driver.get(url)
             wait = ui.WebDriverWait(driver, 400)
 
@@ -33,21 +33,11 @@ def get_ticket(f, t, d0, d1, c0, c1):
                 elem = driver.find_elements_by_class_name("ticket__wrapper")
                 if len(elem) > 0:
                     elem = elem[0]
-                    # {'height': 269, 'width': 523, 'x': 546, 'y': 373}
                     content_elem = driver.find_element_by_class_name("ticket__content")
                     path = str(time()) + ".png"
-                    driver.save_screenshot(path)
-                    '''
-                    im = Image.open(path)
-                    im = im.crop((content_elem.rect['x'],
-                                  content_elem.rect['y'],
-                                  content_elem.rect['x'] + content_elem.rect['width'],
-                                  content_elem.rect['y'] + content_elem.rect['height']))
-                    im.show()
-                    sleep(3)523x269+546+373
 
-                    im.save(path.replace('png', 'jpeg'))
-                    '''
+                    sleep(2)
+                    fullpage_screenshot(driver, path)
                     rect = content_elem.rect
                     subprocess.call(["convert", path, '-crop',
                                      '{}x{}+{}+{}'.format(
@@ -55,14 +45,14 @@ def get_ticket(f, t, d0, d1, c0, c1):
                                          rect['height'],
                                          rect['x'],
                                          rect['y']),
-                                     "output.jpg"])
+                                     "output.png"])
                     sleep(2)
                     price = int(
                         ''.join(
                             list(filter(lambda x: x.isdigit(),
                                         elem.find_element_by_class_name("buy-button__button").text))))
                     redirect_url = elem.find_element_by_class_name("buy-button__link").get_attribute("href")
-                    res = {"img": open('output.jpg', 'rb'), "price": price, "link": redirect_url}
+                    res = {"img": open('output.png', 'rb'), "price": price, "link": redirect_url}
                     remove(path)
                     # remove("output.jpg")
                 else:

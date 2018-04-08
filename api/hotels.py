@@ -8,18 +8,8 @@ import selenium.webdriver.support.ui as ui
 
 
 def processhotel(x):
-    res = dict()
-    '''
-    res['img'] = x.find("div", {"class": "hotel-thumbnail"}).get('data-image')
-    res['img'] = "https" + res['img'] if res['img'].startswith("//") else res['img']
-    res['link'] = x.find("a", {"class": "flex-link"}).get("href")
-    res['name'] = x.find("h4", {"class": "hotelName"}).text.strip('')
-    res['stars'] = int(x.find("span", {"class": "stars-grey"}).get("title")[:1])
-    res['rank'] = x.find("li", {"class": "reviewOverall"}).find_all("span")[1].text
-    res['cost'] = int(x.find("span", {"class": "actualPrice"}).text.strip()[1:]) * 56
-    '''
+    res = {"finished": False}
     try:
-        print("!!0")
         e = x.find_elements_by_class_name("hotel-thumbnail")
         if len(e) > 0:
             img = e[0].get_attribute("data-image")
@@ -28,18 +18,14 @@ def processhotel(x):
             res['img'] = img
         else:
             res['img'] = "https://freeiconshop.com/wp-content/uploads/edd/document-error-flat.png"
-        print(1)
         res['link'] = x.find_element_by_class_name("flex-link").get_attribute("href")
-        print(2)
         res['name'] = x.find_element_by_class_name("hotelName").text.strip('')
-        print(3)
         res['stars'] = int(x.find_element_by_class_name("stars-grey").get_attribute("title")[:1])
-        print(4)
         res['rank'] = x.find_element_by_class_name("reviewOverall").find_elements_by_tag_name("span")[1].text
-        print(5)
         res['cost'] = int(x.find_element_by_class_name("actualPrice").text.strip("")[1:]) * 56
-        print(6)
-    except:
+        # res['dist'] = float(x.find_element_by_class_name("distance").text.split('mi')[0].strip("\n").strip()) / 0.62137
+        res['finished'] = True
+    except Exception as e:
         pass
     return res
 
@@ -52,9 +38,9 @@ def get_hotel(d, d0, d1, c0, ht):
     res = None
 
     try:
-        with contextlib.closing(webdriver.Chrome("/home/petr/Downloads/chromedriver")) as driver:
+        with contextlib.closing(webdriver.Chrome()) as driver:
             driver.get(url)
-            wait = ui.WebDriverWait(driver, 400)
+            wait = ui.WebDriverWait(driver, 60 * 5)
 
             e = driver.find_element_by_name("destination")
             e.clear()
@@ -105,24 +91,14 @@ def get_hotel(d, d0, d1, c0, ht):
             wait.until(lambda xd: xd.find_element_by_id('lodging0').is_displayed())
             print(driver.find_element_by_id('lodging0').is_displayed())
             print(3)
-            '''
-            wait.until_not(lambda xd: xd.find_element_by_class_name('loader').is_displayed())
-            print(5)
-            wait.until_not(lambda xd: xd.find_element_by_class_name('hotel-thumbnail').is_displayed())
-            print(6)
-            wait.until_not(lambda xd: xd.find_element_by_class_name("section-header-main").is_displayed())
-            print(7)
-            '''
+            sleep(4)
             htls = driver.find_elements_by_tag_name("article")
             if len(htls) > 0:
                 res = htls
-                # soup = BeautifulSoup(driver.page_source, "lxml")
-                # res = soup.find_all('article')
-                res = list(map(processhotel, res[:min(50, len(res) - 1)]))
+                res = list(filter(lambda x: x['finished'], map(processhotel, res[:min(len(res) - 1, 40)])))
+                # res = sorted(filter(lambda x: x['finished'], map(processhotel, res)), key=lambda x: x['dist'])
+                res.append(driver.current_url)
     except Exception as e:
         print(e)
         res = None
     return res
-
-
-#print(get_hotel("казанский вокзал", parse_time("2018-04-23"), parse_time("2018-04-27"), 4, 0))
